@@ -256,6 +256,8 @@
         };
 
         let scene, camera, renderer, composer;
+        // Thêm biến global cho bloom pass
+        let bloomPass;
         let groupGold, groupRed, groupGift, groupSnow; 
         let photoMeshes = [];
         let titleMesh, starMesh, loveMesh, cursorMesh;
@@ -284,7 +286,8 @@
             container.appendChild(renderer.domElement);
 
             const renderScene = new THREE.RenderPass(scene, camera);
-            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            // Gán bloomPass vào biến toàn cục để điều khiển sau này
+            bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.2; bloomPass.strength = 0.8; bloomPass.radius = 0.5;
 
             composer = new THREE.EffectComposer(renderer);
@@ -422,7 +425,7 @@
             const c2 = document.createElement('canvas'); c2.width=1024; c2.height=256;
             const ctx2 = c2.getContext('2d');
             ctx2.font='bold 100px "Mountains of Christmas"'; ctx2.fillStyle='#FF69B4'; ctx2.textAlign='center';
-            ctx2.shadowColor="#FF1493"; ctx2.shadowBlur=20; ctx2.fillText("Merry Hẹ Hẹ", 512, 130);
+            ctx2.shadowColor="#FF1493"; ctx2.shadowBlur=20; ctx2.fillText("I Love You", 512, 130);
             loveMesh = new THREE.Mesh(new THREE.PlaneGeometry(60,15), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c2), transparent:true, blending:THREE.AdditiveBlending }));
             loveMesh.position.set(0,0,20); loveMesh.visible=false; scene.add(loveMesh);
 
@@ -467,6 +470,15 @@
             requestAnimationFrame(animate);
             const time = Date.now() * 0.001;
             
+            // --- BLOOM CONTROL LOGIC ---
+            // Nếu đang Zoom ảnh (PHOTO), giảm bloom xuống 0
+            // Nếu không phải PHOTO, bật bloom lên 0.8
+            if (bloomPass) {
+                const targetStrength = (state === 'PHOTO') ? 0 : 0.8;
+                // Lerp để chuyển độ lóa mượt mà, không bị giật cục
+                bloomPass.strength = THREE.MathUtils.lerp(bloomPass.strength, targetStrength, 0.1);
+            }
+
             updateParticles(groupGold, 'gold', time, 0.08);
             updateParticles(groupRed, 'red', time, 0.08);
             updateParticles(groupGift, 'gift', time, 0.08);
